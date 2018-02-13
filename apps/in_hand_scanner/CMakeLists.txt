@@ -5,9 +5,9 @@ set(SUBSUBSYS_LIBS pcl_common pcl_features pcl_io pcl_kdtree)
 
 ################################################################################
 # Qt
-if(NOT QT4_FOUND)
+if(NOT QT5_FOUND)
   set(DEFAULT AUTO_OFF)
-  set(REASON "Qt4 is required for the in_hand_scanner app!")
+  set(REASON "Qt5 is required for the in_hand_scanner app!")
 else()
     set(DEFAULT TRUE)
     set(REASON)
