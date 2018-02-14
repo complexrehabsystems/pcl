@@ -5,9 +5,9 @@ set(SUBSUBSYS_LIBS pcl_common pcl_features pcl_io pcl_kdtree)
 
 ################################################################################
 # Qt
-if(NOT QT4_FOUND)
+if(NOT QT5_FOUND)
   set(DEFAULT AUTO_OFF)
-  set(REASON "Qt4 is required for the in_hand_scanner app!")
+  set(REASON "Qt5 is required for the in_hand_scanner app!")
 else()
     set(DEFAULT TRUE)
     set(REASON)
@@ -31,13 +31,23 @@ elseif(NOT ${DEFAULT} STREQUAL "AUTO_OFF")
     set(REASON)
 endif()
 
+
+#librealsense
+if(NOT WITH_LIBREALSENSE)
+    set(DEFAULT AUTO_OFF)
+    set(REASON "librealsense was not found or was disabled by the user.")
+elseif(NOT ${DEFAULT} STREQUAL "AUTO_OFF")
+    set(DEFAULT TRUE)
+    set(REASON)
+endif()
+
 # Default to not building for now
 if (${DEFAULT} STREQUAL "TRUE")
   set(DEFAULT FALSE)
 endif()
 
 pcl_subsubsys_option(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
-pcl_subsubsys_depend(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" DEPS ${SUBSYS_DEPS} EXT_DEPS Qt4 OpenGL OpenGL_GLU openni)
+pcl_subsubsys_depend(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" DEPS ${SUBSYS_DEPS} EXT_DEPS Qt5 OpenGL OpenGL_GLU openni librealsense)
 
 pcl_add_doc("${SUBSUBSYS_NAME}")
 
@@ -101,21 +111,19 @@ set(OI_SRCS
 if(build)
 
   # Qt
-  # http://qtnode.net/wiki/Qt4_with_cmake
-  # http://qt-project.org/quarterly/view/using_cmake_to_build_qt_projects
   set(QT_USE_QTOPENGL TRUE)
   include("${QT_USE_FILE}")
-  qt4_wrap_cpp(MOC_IN_HAND_SCANNER_SRC     "${MOC_IN_HAND_SCANNER_INC}")
-  qt4_wrap_cpp(MOC_OPENGL_VIEWER_SRC       "${MOC_OPENGL_VIEWER_INC}" OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
-  qt4_wrap_cpp(MOC_OFFLINE_INTEGRATION_SRC "${MOC_OFFLINE_INTEGRATION_INC}" OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
+  qt5_wrap_cpp(MOC_IN_HAND_SCANNER_SRC     "${MOC_IN_HAND_SCANNER_INC}")
+  qt5_wrap_cpp(MOC_OPENGL_VIEWER_SRC       "${MOC_OPENGL_VIEWER_INC}" OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
+  qt5_wrap_cpp(MOC_OFFLINE_INTEGRATION_SRC "${MOC_OFFLINE_INTEGRATION_INC}" OPTIONS -DBOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
 
-  qt4_wrap_cpp(MOC_MAIN_WINDOW_SRC "${MOC_MAIN_WINDOW_INC}")
-  qt4_wrap_cpp(MOC_HELP_WINDOW_SRC "${MOC_HELP_WINDOW_INC}")
-  qt4_wrap_ui(UI_MAIN_WINDOW_INC   "${UI_MAIN_WINDOW}")
-  qt4_wrap_ui(UI_HELP_WINDOW_INC   "${UI_HELP_WINDOW}")
+  qt5_wrap_cpp(MOC_MAIN_WINDOW_SRC "${MOC_MAIN_WINDOW_INC}")
+  qt5_wrap_cpp(MOC_HELP_WINDOW_SRC "${MOC_HELP_WINDOW_INC}")
+  qt5_wrap_ui(UI_MAIN_WINDOW_INC   "${UI_MAIN_WINDOW}")
+  qt5_wrap_ui(UI_HELP_WINDOW_INC   "${UI_HELP_WINDOW}")
 
   list(APPEND ADDITIONAL_LIBS ${QT_LIBRARIES})
-  include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+  include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include"  ${LIBREALSENSE_INCLUDE_DIRS})
 
   # In-hand scanner
   list(APPEND INCS "${MOC_IN_HAND_SCANNER_INC}" "${MOC_OPENGL_VIEWER_INC}" "${MOC_MAIN_WINDOW_INC}" "${MOC_HELP_WINDOW_INC}" "${UI_MAIN_WINDOW_INC}" "${UI_HELP_WINDOW_INC}")
@@ -123,7 +131,7 @@ if(build)
 
   set(EXE_NAME "pcl_${SUBSUBSYS_NAME}")
   pcl_add_executable_opt_bundle("${EXE_NAME}" "${SUBSUBSYS_NAME}" ${SRCS} ${INCS} ${IMPL_INCS})
-  target_link_libraries("${EXE_NAME}" ${SUBSUBSYS_LIBS} ${OPENGL_LIBRARIES} ${QT_LIBRARIES})
+  target_link_libraries("${EXE_NAME}" ${SUBSUBSYS_LIBS} ${OPENGL_LIBRARIES} ${QT_LIBRARIES} ${LIBREALSENSE_LIBRARIES})
 
   pcl_add_includes("${SUBSUBSYS_NAME}" "${SUBSUBSYS_NAME}" ${INCS})
   pcl_add_includes("${SUBSUBSYS_NAME}" "${SUBSUBSYS_NAME}/impl" ${IMPL_INCS})
@@ -135,6 +143,6 @@ if(build)
   list(APPEND OI_SRCS "${MOC_OPENGL_VIEWER_SRC}" "${MOC_OFFLINE_INTEGRATION_SRC}")
 
   pcl_add_executable_opt_bundle(pcl_offline_integration "${SUBSUBSYS_NAME}" ${OI_SRCS} ${OI_INCS})
-  target_link_libraries(pcl_offline_integration ${SUBSUBSYS_LIBS} ${OPENGL_LIBRARIES} ${QT_LIBRARIES})
+  target_link_libraries(pcl_offline_integration ${SUBSUBSYS_LIBS} ${OPENGL_LIBRARIES} ${QT_LIBRARIES} ${LIBREALSENSE_LIBRARIES})
 
 endif()
