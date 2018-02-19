@@ -26,6 +26,17 @@ if(BUILD_all_in_one_installer)
         list(APPEND PCL_3RDPARTY_COMPONENTS ${dep})
     endforeach(dep)
 
+    if(WITH_REALSENSE2)
+        get_filename_component(REALSENSE2_ROOT "@REALSENSE2_INCLUDE_DIRS@" PATH)
+        install(
+                DIRECTORY "${REALSENSE2_ROOT}/"
+                DESTINATION 3rdParty/librealsense2
+                COMPONENT librealsense2
+                PATTERN "*/Uninstall.exe" EXCLUDE
+            )
+        list(APPEND PCL_3RDPARTY_COMPONENTS librealsense2)
+    endif(WITH_REALSENSE2)
+
     if(WITH_OPENNI)
         if(CMAKE_CL_64)
             set(OPENNI_PACKAGE "OpenNI-Win64-1.5.4-Dev.msi")
