@@ -33,7 +33,7 @@ endif()
 
 
 #librealsense
-if(NOT WITH_LIBREALSENSE)
+if(NOT WITH_REALSENSE2)
     set(DEFAULT AUTO_OFF)
     set(REASON "librealsense was not found or was disabled by the user.")
 elseif(NOT ${DEFAULT} STREQUAL "AUTO_OFF")
