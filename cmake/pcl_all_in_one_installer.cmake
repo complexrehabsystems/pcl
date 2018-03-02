@@ -30,7 +30,7 @@ if(BUILD_all_in_one_installer)
         get_filename_component(RSSDK2_ROOT "@RSSDK2_INCLUDE_DIRS@" PATH)
         install(
                 DIRECTORY "${RSSDK2_ROOT}/"
-                DESTINATION 3rdParty/librealsense
+                DESTINATION 3rdParty/librealsense2
                 COMPONENT rssdk2
                 PATTERN "*/Uninstall.exe" EXCLUDE
             )
