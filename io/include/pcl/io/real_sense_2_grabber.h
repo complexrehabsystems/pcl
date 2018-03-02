@@ -57,14 +57,9 @@ namespace pcl
   {
   public:
     /** \brief Constructor
-    * \param[in] serial_number optional to start up a specific device
+    * \param[in] file_name_or_serial_number used for either loading bag file or specific device by serial number
     */
-    RealSense2Grabber (const uint32_t serial_number = 0);
-
-    /** \brief Constructor
-    * \param[in] file_name used for loading bag file
-    */
-    RealSense2Grabber (const std::string& file_name);
+    RealSense2Grabber (const std::string& file_name_or_serial_number = "");   
 
     /** \brief virtual Destructor inherited from the Grabber interface. It never throws. */
     virtual ~RealSense2Grabber () throw ();
@@ -115,6 +110,7 @@ namespace pcl
     typedef void (signal_librealsense_PointXYZRGBA) (const boost::shared_ptr<const pcl::PointCloud<pcl::PointXYZRGBA>>&);
 
   protected:
+    
     boost::signals2::signal<signal_librealsense_PointXYZ>* signal_PointXYZ;
     boost::signals2::signal<signal_librealsense_PointXYZI>* signal_PointXYZI;
     boost::signals2::signal<signal_librealsense_PointXYZRGB>* signal_PointXYZRGB;
@@ -155,6 +151,14 @@ namespace pcl
     std::tuple<uint8_t, uint8_t, uint8_t> 
     getTextureColor (rs2::video_frame & texture, float u, float v);
 
+    /** \brief Retrieve color intensity from texture video frame
+    * \param[in] texture the texture
+    * \param[in] u 2D coordinate
+    * \param[in] v 2D coordinate
+    */
+    uint8_t
+    getTextureIntensity (rs2::video_frame &texture, float u, float v);
+
     /** \brief the thread function
     */
     void 
@@ -162,14 +166,14 @@ namespace pcl
 
     std::thread thread_;
     mutable std::mutex mutex_;
-    uint32_t serial_number_;
-    std::string file_name_;
+    std::string file_name_or_serial_number_;
     bool quit_;
     bool running_;
     float fps_;
     uint32_t device_width_;
     uint32_t device_height_;
     uint32_t target_fps_;
+    rs2_format ir_format_;
 
     // Declare pointcloud object, for calculating pointclouds and texture mappings
     rs2::pointcloud pc_;
