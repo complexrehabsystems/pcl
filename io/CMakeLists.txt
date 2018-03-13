@@ -351,7 +351,7 @@ if(build)
     if(WITH_OPENNI)
       target_link_libraries("${LIB_NAME}" ${OPENNI_LIBRARIES})
     endif()
- 
+
     if(WITH_FZAPI)
       target_link_libraries("${LIB_NAME}" ${FZAPI_LIBS})
       if(WIN32)
