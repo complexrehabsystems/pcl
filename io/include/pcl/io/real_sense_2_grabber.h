@@ -50,8 +50,11 @@ namespace pcl
 {
 
   /** \brief Grabber for Intel Realsense 2 SDK devices (D400 series)
-  * \author Patrick Abadi <patrickabadi@gmail.com>, Daniel Packard <pack3754@gmail.com>
-  * \ingroup io
+    * \note Device width/height defaults to 424/240, the lowest resolutions for D400 devices.
+    * \note Testing on the in_hand_scanner example we found the lower default resolution allowed the app to perform adequately.
+    * \note Developers should use this resolution as a starting point and gradually increase to get the best results
+    * \author Patrick Abadi <patrickabadi@gmail.com>, Daniel Packard <pack3754@gmail.com>
+    * \ingroup io
   */
   class PCL_EXPORTS RealSense2Grabber : public pcl::Grabber
   {
@@ -114,50 +117,7 @@ namespace pcl
     boost::signals2::signal<signal_librealsense_PointXYZ>* signal_PointXYZ;
     boost::signals2::signal<signal_librealsense_PointXYZI>* signal_PointXYZI;
     boost::signals2::signal<signal_librealsense_PointXYZRGB>* signal_PointXYZRGB;
-    boost::signals2::signal<signal_librealsense_PointXYZRGBA>* signal_PointXYZRGBA;
-
-    /** \brief Convert a Depth image to a pcl::PointCloud<pcl::PointXYZ>
-    * \param[in] points the depth points
-    */
-    pcl::PointCloud<pcl::PointXYZ>::Ptr 
-    convertDepthToPointXYZ (const rs2::points& points);
-
-    /** \brief Convert an Infrared Depth image to a pcl::PointCloud<pcl::PointXYZI>
-    * \param[in] points the depth points
-    * \param[in] ir Infrared video frame
-    */
-    pcl::PointCloud<pcl::PointXYZI>::Ptr 
-    convertInfraredDepthToPointXYZI (const rs2::points& points, const rs2::video_frame& ir);
-
-    /** \brief Convert an rgb Depth image to a pcl::PointCloud<pcl::PointXYZRGB>
-    * \param[in] points the depth points
-    * \param[in] rgb rgb video frame
-    */
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
-    convertRGBDepthToPointXYZRGB (const rs2::points& points, const rs2::video_frame& rgb);
-
-    /** \brief Convert an rgb Depth image to a pcl::PointCloud<pcl::PointXYZRGBA>
-    * \param[in] points the depth points
-    * \param[in] rgb rgb video frame
-    */
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr 
-    convertRGBADepthToPointXYZRGBA (const rs2::points& points, const rs2::video_frame& rgb);
-
-    /** \brief Retrieve RGB color from texture video frame
-    * \param[in] texture the texture
-    * \param[in] u 2D coordinate
-    * \param[in] v 2D coordinate
-    */
-    pcl::RGB
-    getTextureColor (const rs2::video_frame& texture, float u, float v);
-
-    /** \brief Retrieve color intensity from texture video frame
-    * \param[in] texture the texture
-    * \param[in] u 2D coordinate
-    * \param[in] v 2D coordinate
-    */
-    uint8_t
-    getTextureIntensity (const rs2::video_frame& texture, float u, float v);
+    boost::signals2::signal<signal_librealsense_PointXYZRGBA>* signal_PointXYZRGBA;    
 
     /** \brief the thread function
     */

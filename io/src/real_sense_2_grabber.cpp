@@ -46,6 +46,27 @@
 #include <pcl/io/real_sense_2_grabber.h>
 #include <pcl/common/time.h>
 
+pcl::RGB
+getTextureColor (const rs2::video_frame& texture, float u, float v);
+
+uint8_t
+getTextureIntensity (const rs2::video_frame& texture, float u, float v);
+
+template <typename PointT, typename Functor>
+typename pcl::PointCloud<PointT>::Ptr
+convertRealsensePointsToPointCloud (const rs2::points& points, Functor mapColorFunc);
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr
+convertDepthToPointXYZ (const rs2::points& points);
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr
+convertRGBDepthToPointXYZRGB (const rs2::points& points, const rs2::video_frame& texture);
+
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
+convertRGBADepthToPointXYZRGBA (const rs2::points& points, const rs2::video_frame& texture);
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr
+convertIntensityDepthToPointXYZRGBI (const rs2::points& points, const rs2::video_frame& texture);
 
 namespace pcl
 {
@@ -136,196 +157,19 @@ namespace pcl
     return fps_;
   }
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr 
-  RealSense2Grabber::convertDepthToPointXYZ (const rs2::points& points)
-  {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ> ());
-
-    auto sp = points.get_profile ().as<rs2::video_stream_profile> ();
-    cloud->width = sp.width ();
-    cloud->height = sp.height ();
-    cloud->is_dense = false;
-    cloud->points.resize (points.size ());
-
-    auto vertices_ptr = points.get_vertices ();
-
-#ifdef _OPENMP
-#pragma omp parallel for 
-#endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
-    {
-      auto ptr = vertices_ptr + index;
-      auto& p = cloud->points[index];
-
-      p.x = ptr->x;
-      p.y = ptr->y;
-      p.z = ptr->z;
-    }
-
-    return cloud;
-  }
-
-  pcl::PointCloud<pcl::PointXYZI>::Ptr 
-  RealSense2Grabber::convertInfraredDepthToPointXYZI (const rs2::points& points, const rs2::video_frame& ir)
-  {
-    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZI> ());
-
-    auto sp = points.get_profile ().as<rs2::video_stream_profile> ();
-    cloud->width = sp.width ();
-    cloud->height = sp.height ();
-    cloud->is_dense = false;
-    cloud->points.resize (points.size ());
-
-    auto vertices_ptr = points.get_vertices ();
-    auto texture_ptr = points.get_texture_coordinates ();
-
-    const bool is_uyvy = ir_format_ == RS2_FORMAT_UYVY;
-    
-#ifdef _OPENMP
-#pragma omp parallel for 
-#endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
-    {
-      auto ptr = vertices_ptr + index;
-      auto uvptr = texture_ptr + index;
-      auto& p = cloud->points[index];
-
-      p.x = ptr->x;
-      p.y = ptr->y;
-      p.z = ptr->z;      
-
-      // compiler should optimize this if call 
-      // https://en.wikipedia.org/wiki/Loop_unswitching
-      if (is_uyvy)
-      {
-        auto clr = getTextureColor (ir, uvptr->u, uvptr->v);
-        p.intensity = 0.299f * static_cast <float> (clr.r) + 0.587f * static_cast <float> (clr.g) + 0.114f * static_cast <float> (clr.b);
-      }
-      else
-      {
-        p.intensity = getTextureIntensity (ir, uvptr->u, uvptr->v);
-      }
-
-    }
-    return cloud;
-  }
-
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
-  RealSense2Grabber::convertRGBDepthToPointXYZRGB (const rs2::points& points, const rs2::video_frame& rgb)
-  {
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB> ());
-
-    auto sp = points.get_profile ().as<rs2::video_stream_profile> ();
-    cloud->width = sp.width ();
-    cloud->height = sp.height ();
-    cloud->is_dense = false;
-    cloud->points.resize (points.size ());
-
-    auto vertices_ptr = points.get_vertices ();
-    auto texture_ptr = points.get_texture_coordinates ();
-
-#ifdef _OPENMP
-#pragma omp parallel for 
-#endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
-    {
-      auto ptr = vertices_ptr + index;
-      auto uvptr = texture_ptr + index;
-      auto& p = cloud->points[index];
-
-      p.x = ptr->x;
-      p.y = ptr->y;
-      p.z = ptr->z;
-
-      auto clr = getTextureColor (rgb, uvptr->u, uvptr->v);
-
-      p.r = clr.r;
-      p.g = clr.g;
-      p.b = clr.b;
-      p.a = 255;
-    }
-
-    return cloud;
-  }
-
-  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr 
-  RealSense2Grabber::convertRGBADepthToPointXYZRGBA (const rs2::points& points, const rs2::video_frame& rgb)
-  {
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA> ());
-
-    auto sp = points.get_profile ().as<rs2::video_stream_profile> ();
-    cloud->width = sp.width ();
-    cloud->height = sp.height ();
-    cloud->is_dense = false;
-    cloud->points.resize (points.size ());
-
-    auto vertices_ptr = points.get_vertices ();
-    auto texture_ptr = points.get_texture_coordinates ();
-
-#ifdef _OPENMP
-#pragma omp parallel for 
-#endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
-    {
-      auto ptr = vertices_ptr + index;
-      auto uvptr = texture_ptr + index;
-      auto& p = cloud->points[index];
-
-      p.x = ptr->x;
-      p.y = ptr->y;
-      p.z = ptr->z;
-
-      auto clr = getTextureColor (rgb, uvptr->u, uvptr->v);
-
-      p.r = clr.r;
-      p.g = clr.g;
-      p.b = clr.b;
-      p.a = 255;
-    }
-
-    return cloud;
-  }
-
-  pcl::RGB
-  RealSense2Grabber::getTextureColor (const rs2::video_frame& texture, float u, float v)
-  {
-    const int w = texture.get_width (), h = texture.get_height ();
-    int x = std::min (std::max (int (u*w + .5f), 0), w - 1);
-    int y = std::min (std::max (int (v*h + .5f), 0), h - 1);
-    int idx = x * texture.get_bytes_per_pixel() + y * texture.get_stride_in_bytes ();
-    const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data ());
-
-    pcl::RGB rgb;
-    rgb.r = texture_data[idx];
-    rgb.g = texture_data[idx + 1];
-    rgb.b = texture_data[idx + 2];
-    return rgb;
-  }
-
-  uint8_t
-  RealSense2Grabber::getTextureIntensity(const rs2::video_frame& texture, float u, float v)
-  {
-    const int w = texture.get_width (), h = texture.get_height ();
-    int x = std::min (std::max (int (u*w + .5f), 0), w - 1);
-    int y = std::min (std::max (int (v*h + .5f), 0), h - 1);
-    int idx = x * texture.get_bytes_per_pixel () + y * texture.get_stride_in_bytes ();
-    const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data ());
-    return texture_data[idx];
-  }
-
   void 
   RealSense2Grabber::threadFunction ()
   {
-    pcl::StopWatch sw;
-
-    rs2::depth_frame depth = nullptr;
-    rs2::video_frame rgb = nullptr;
-    rs2::video_frame ir = nullptr;
-    rs2::points points;
+    pcl::StopWatch sw;    
 
     while (!quit_)
     {
       sw.reset ();
+
+      rs2::depth_frame depth = nullptr;
+      rs2::video_frame rgb = nullptr;
+      rs2::video_frame ir = nullptr;
+      rs2::points points;
 
       {
         std::lock_guard<std::mutex> guard (mutex_);
@@ -351,24 +195,25 @@ namespace pcl
 
       }
 
+
       if (signal_PointXYZ->num_slots () > 0)
       {
-        signal_PointXYZ->operator()(convertDepthToPointXYZ (points));
+        (*signal_PointXYZ)(convertDepthToPointXYZ (points));
       }
 
       if (signal_PointXYZI->num_slots () > 0)
       {
-        signal_PointXYZI->operator()(convertInfraredDepthToPointXYZI (points, ir));
+        (*signal_PointXYZI)(convertIntensityDepthToPointXYZRGBI (points, ir));
       }
 
       if (signal_PointXYZRGB->num_slots () > 0)
       {
-        signal_PointXYZRGB->operator()(convertRGBDepthToPointXYZRGB (points, rgb));
+        (*signal_PointXYZRGB)(convertRGBDepthToPointXYZRGB (points, rgb));
       }
 
       if (signal_PointXYZRGBA->num_slots () > 0)
       {
-        signal_PointXYZRGBA->operator()(convertRGBADepthToPointXYZRGBA (points, rgb));
+        (*signal_PointXYZRGBA)(convertRGBADepthToPointXYZRGBA (points, rgb));
       }
 
       fps_ = 1.0f / static_cast <float> (sw.getTimeSeconds ());
@@ -376,4 +221,132 @@ namespace pcl
     }
   }
 
+}
+
+pcl::RGB
+getTextureColor (const rs2::video_frame& texture, float u, float v)
+{
+  const int w = texture.get_width (), h = texture.get_height ();
+  int x = std::min (std::max (int (u*w + .5f), 0), w - 1);
+  int y = std::min (std::max (int (v*h + .5f), 0), h - 1);
+  int idx = x * texture.get_bytes_per_pixel () + y * texture.get_stride_in_bytes ();
+  const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data ());
+
+  pcl::RGB rgb;
+  rgb.r = texture_data[idx];
+  rgb.g = texture_data[idx + 1];
+  rgb.b = texture_data[idx + 2];
+  return rgb;
+}
+
+uint8_t
+getTextureIntensity (const rs2::video_frame& texture, float u, float v)
+{
+  const int w = texture.get_width (), h = texture.get_height ();
+  int x = std::min (std::max (int (u*w + .5f), 0), w - 1);
+  int y = std::min (std::max (int (v*h + .5f), 0), h - 1);
+  int idx = x * texture.get_bytes_per_pixel () + y * texture.get_stride_in_bytes ();
+  const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data ());
+  return texture_data[idx];
+}
+
+
+template <typename PointT, typename Functor>
+typename pcl::PointCloud<PointT>::Ptr
+convertRealsensePointsToPointCloud (const rs2::points& points, Functor mapColorFunc)
+{
+  typename pcl::PointCloud<PointT>::Ptr cloud (new pcl::PointCloud<PointT> ());
+
+  auto sp = points.get_profile ().as<rs2::video_stream_profile> ();
+  cloud->width = sp.width ();
+  cloud->height = sp.height ();
+  cloud->is_dense = false;
+  cloud->points.resize (points.size ());
+
+  const auto cloud_vertices_ptr = points.get_vertices ();
+  const auto cloud_texture_ptr = points.get_texture_coordinates ();
+
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif
+  for (int index = 0; index < cloud->points.size (); ++index)
+  {
+    const auto ptr = cloud_vertices_ptr + index;
+    const auto uvptr = cloud_texture_ptr + index;
+    auto& p = cloud->points[index];
+
+    p.x = ptr->x;
+    p.y = ptr->y;
+    p.z = ptr->z;
+
+    mapColorFunc (p, uvptr);
+  }
+
+  return cloud;
+}
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr
+convertDepthToPointXYZ (const rs2::points& points)
+{
+  auto pFunc = [](pcl::PointXYZ& p, const rs2::texture_coordinate* uvptr)
+  {
+  };
+
+  return convertRealsensePointsToPointCloud<pcl::PointXYZ> (points, pFunc);
+}
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr
+convertRGBDepthToPointXYZRGB (const rs2::points& points, const rs2::video_frame& texture)
+{
+  auto pFunc = [texture](pcl::PointXYZRGB& p, const rs2::texture_coordinate* uvptr)
+  {
+    auto clr = getTextureColor (texture, uvptr->u, uvptr->v);
+
+    p.r = clr.r;
+    p.g = clr.g;
+    p.b = clr.b;
+  };
+
+  return convertRealsensePointsToPointCloud<pcl::PointXYZRGB> (points, pFunc);
+}
+
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr
+convertRGBADepthToPointXYZRGBA (const rs2::points& points, const rs2::video_frame& texture)
+{
+  auto pFunc = [texture](pcl::PointXYZRGBA& p, const rs2::texture_coordinate* uvptr)
+  {
+    auto clr = getTextureColor (texture, uvptr->u, uvptr->v);
+
+    p.r = clr.r;
+    p.g = clr.g;
+    p.b = clr.b;
+  };
+
+  return convertRealsensePointsToPointCloud<pcl::PointXYZRGBA> (points, pFunc);
+}
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr
+convertIntensityDepthToPointXYZRGBI (const rs2::points& points, const rs2::video_frame& texture)
+{
+  if (texture.get_profile ().format () == RS2_FORMAT_UYVY)
+  {
+    auto pFunc = [texture](pcl::PointXYZI& p, const rs2::texture_coordinate* uvptr)
+    {
+      auto clr = getTextureColor (texture, uvptr->u, uvptr->v);
+      p.intensity = 0.299f * static_cast <float> (clr.r) + 0.587f * static_cast <float> (clr.g) + 0.114f * static_cast <float> (clr.b);
+    };
+
+    return convertRealsensePointsToPointCloud<pcl::PointXYZI> (points, pFunc);
+
+  }
+  else
+  {
+    auto pFunc = [texture](pcl::PointXYZI& p, const rs2::texture_coordinate* uvptr)
+    {
+      p.intensity = getTextureIntensity (texture, uvptr->u, uvptr->v);
+    };
+
+    return convertRealsensePointsToPointCloud<pcl::PointXYZI> (points, pFunc);
+
+  }
 }
