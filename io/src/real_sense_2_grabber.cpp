@@ -46,6 +46,62 @@
 #include <pcl/io/real_sense_2_grabber.h>
 #include <pcl/common/time.h>
 
+pcl::RGB
+getTextureColor (const rs2::video_frame& texture, float u, float v)
+{
+  const int w = texture.get_width (), h = texture.get_height ();
+  int x = std::min (std::max (int (u*w + .5f), 0), w - 1);
+  int y = std::min (std::max (int (v*h + .5f), 0), h - 1);
+  int idx = x * texture.get_bytes_per_pixel () + y * texture.get_stride_in_bytes ();
+  const auto texture_data = reinterpret_cast<const uint8_t*>(texture.get_data ());
+
+  pcl::RGB rgb;
+  rgb.r = texture_data[idx];
+  rgb.g = texture_data[idx + 1];
+  rgb.b = texture_data[idx + 2];
+  return rgb;
+}
+
+template <typename PointT>
+typename pcl::PointCloud<PointT>::Ptr
+convertRealsensePointsToPointCloud (
+  const rs2::points& points,
+  const rs2::video_frame& texture = nullptr)
+{
+  typename pcl::PointCloud<PointT>::Ptr cloud (new pcl::PointCloud<PointT> ());
+
+  auto sp = points.get_profile ().as<rs2::video_stream_profile> ();
+  cloud->width = sp.width ();
+  cloud->height = sp.height ();
+  cloud->is_dense = false;
+  cloud->points.resize (points.size ());
+
+  const auto cloud_vertices_ptr = points.get_vertices ();
+  const auto cloud_texture_ptr = points.get_texture_coordinates ();
+
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif
+  for (int index = 0; index < cloud->points.size (); ++index)
+  {
+    const auto ptr = cloud_vertices_ptr + index;
+    const auto uvptr = cloud_texture_ptr + index;
+    auto& p = cloud->points[index];
+
+    p.x = ptr->x;
+    p.y = ptr->y;
+    p.z = ptr->z;
+
+    auto clr = getTextureColor (texture, uvptr->u, uvptr->v);
+
+    p.r = clr.r;
+    p.g = clr.g;
+    p.b = clr.b;
+  }
+
+  return cloud;
+}
+
 
 namespace pcl
 {
@@ -152,7 +208,7 @@ namespace pcl
 #ifdef _OPENMP
 #pragma omp parallel for 
 #endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
+    for (int index = 0; index < cloud->points.size (); ++index)
     {
       auto ptr = vertices_ptr + index;
       auto& p = cloud->points[index];
@@ -184,7 +240,7 @@ namespace pcl
 #ifdef _OPENMP
 #pragma omp parallel for 
 #endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
+    for (int index = 0; index < cloud->points.size (); ++index)
     {
       auto ptr = vertices_ptr + index;
       auto uvptr = texture_ptr + index;
@@ -227,7 +283,7 @@ namespace pcl
 #ifdef _OPENMP
 #pragma omp parallel for 
 #endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
+    for (int index = 0; index < cloud->points.size (); ++index)
     {
       auto ptr = vertices_ptr + index;
       auto uvptr = texture_ptr + index;
@@ -242,7 +298,6 @@ namespace pcl
       p.r = clr.r;
       p.g = clr.g;
       p.b = clr.b;
-      p.a = 255;
     }
 
     return cloud;
@@ -265,7 +320,7 @@ namespace pcl
 #ifdef _OPENMP
 #pragma omp parallel for 
 #endif
-    for (uint32_t index = 0; index < cloud->points.size (); ++index)
+    for (int index = 0; index < cloud->points.size (); ++index)
     {
       auto ptr = vertices_ptr + index;
       auto uvptr = texture_ptr + index;
@@ -280,7 +335,6 @@ namespace pcl
       p.r = clr.r;
       p.g = clr.g;
       p.b = clr.b;
-      p.a = 255;
     }
 
     return cloud;
@@ -316,16 +370,16 @@ namespace pcl
   void 
   RealSense2Grabber::threadFunction ()
   {
-    pcl::StopWatch sw;
-
-    rs2::depth_frame depth = nullptr;
-    rs2::video_frame rgb = nullptr;
-    rs2::video_frame ir = nullptr;
-    rs2::points points;
+    pcl::StopWatch sw;    
 
     while (!quit_)
     {
       sw.reset ();
+
+      rs2::depth_frame depth = nullptr;
+      rs2::video_frame rgb = nullptr;
+      rs2::video_frame ir = nullptr;
+      rs2::points points;
 
       {
         std::lock_guard<std::mutex> guard (mutex_);
@@ -351,24 +405,26 @@ namespace pcl
 
       }
 
+
+
       if (signal_PointXYZ->num_slots () > 0)
       {
-        signal_PointXYZ->operator()(convertDepthToPointXYZ (points));
+        (*signal_PointXYZ)(convertDepthToPointXYZ (points));
       }
 
       if (signal_PointXYZI->num_slots () > 0)
       {
-        signal_PointXYZI->operator()(convertInfraredDepthToPointXYZI (points, ir));
+        (*signal_PointXYZI)(convertInfraredDepthToPointXYZI (points, ir));
       }
 
       if (signal_PointXYZRGB->num_slots () > 0)
       {
-        signal_PointXYZRGB->operator()(convertRGBDepthToPointXYZRGB (points, rgb));
+        (*signal_PointXYZRGB)(convertRealsensePointsToPointCloud<pcl::PointXYZRGB> (points, rgb));
       }
 
       if (signal_PointXYZRGBA->num_slots () > 0)
       {
-        signal_PointXYZRGBA->operator()(convertRGBADepthToPointXYZRGBA (points, rgb));
+        (*signal_PointXYZRGBA)(convertRGBADepthToPointXYZRGBA (points, rgb));
       }
 
       fps_ = 1.0f / static_cast <float> (sw.getTimeSeconds ());

@@ -50,8 +50,11 @@ namespace pcl
 {
 
   /** \brief Grabber for Intel Realsense 2 SDK devices (D400 series)
-  * \author Patrick Abadi <patrickabadi@gmail.com>, Daniel Packard <pack3754@gmail.com>
-  * \ingroup io
+    * \note Device width/height defaults to 424/240, the lowest resolutions for D400 devices.
+    * \note Testing on the in_hand_scanner example we found the lower default resolution allowed the app to perform adequately.
+    * \note Developers should use this resolution as a starting point and gradually increase to get the best results
+    * \author Patrick Abadi <patrickabadi@gmail.com>, Daniel Packard <pack3754@gmail.com>
+    * \ingroup io
   */
   class PCL_EXPORTS RealSense2Grabber : public pcl::Grabber
   {
@@ -115,6 +118,8 @@ namespace pcl
     boost::signals2::signal<signal_librealsense_PointXYZI>* signal_PointXYZI;
     boost::signals2::signal<signal_librealsense_PointXYZRGB>* signal_PointXYZRGB;
     boost::signals2::signal<signal_librealsense_PointXYZRGBA>* signal_PointXYZRGBA;
+
+    
 
     /** \brief Convert a Depth image to a pcl::PointCloud<pcl::PointXYZ>
     * \param[in] points the depth points
