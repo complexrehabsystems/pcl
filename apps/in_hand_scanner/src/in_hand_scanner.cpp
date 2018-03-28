@@ -51,9 +51,9 @@
 #include <pcl/exceptions.h>
 #include <pcl/common/time.h>
 #include <pcl/common/transforms.h>
-#include <pcl/io/openni_grabber.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/io/vtk_io.h>
+#include <pcl/io/real_sense_2_grabber.h>
 #include <pcl/geometry/get_boundary.h>
 #include <pcl/geometry/mesh_conversion.h>
 #include <pcl/apps/in_hand_scanner/icp.h>

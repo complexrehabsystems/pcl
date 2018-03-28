@@ -22,16 +22,6 @@ elseif(NOT ${DEFAULT} STREQUAL "AUTO_OFF")
     set(REASON)
 endif()
 
-#OpenNI
-if(NOT WITH_OPENNI)
-    set(DEFAULT AUTO_OFF)
-    set(REASON "OpenNI was not found or was disabled by the user.")
-elseif(NOT ${DEFAULT} STREQUAL "AUTO_OFF")
-    set(DEFAULT TRUE)
-    set(REASON)
-endif()
-
-
 #librealsense
 if(NOT WITH_RSSDK2)
     set(DEFAULT AUTO_OFF)
@@ -47,7 +37,7 @@ if (${DEFAULT} STREQUAL "TRUE")
 endif()
 
 pcl_subsubsys_option(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
-pcl_subsubsys_depend(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" DEPS ${SUBSYS_DEPS} EXT_DEPS Qt5 OpenGL OpenGL_GLU openni rssdk2)
+pcl_subsubsys_depend(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" DEPS ${SUBSYS_DEPS} EXT_DEPS Qt5 OpenGL OpenGL_GLU rssdk2)
 
 pcl_add_doc("${SUBSUBSYS_NAME}")
 

@@ -211,7 +211,6 @@ namespace pcl
         typedef pcl::ihs::MeshPtr      MeshPtr;
         typedef pcl::ihs::MeshConstPtr MeshConstPtr;
 
-        //typedef pcl::OpenNIGrabber                Grabber;
         typedef RealSense2Grabber                 Grabber;
         typedef boost::shared_ptr <Grabber>       GrabberPtr;
         typedef boost::shared_ptr <const Grabber> GrabberConstPtr;
