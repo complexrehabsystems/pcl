@@ -2,9 +2,9 @@ set(SUBSYS_NAME apps)
 set(SUBSYS_DESC "Application examples/samples that show how PCL works")
 set(SUBSYS_DEPS common geometry io filters sample_consensus segmentation visualization kdtree features surface octree registration keypoints tracking search recognition ml stereo 2d)
 
-set(DEFAULT FALSE)
+set(DEFAULT TRUE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
-PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS openni vtk)
+PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS vtk)
 
 if(build)
 
