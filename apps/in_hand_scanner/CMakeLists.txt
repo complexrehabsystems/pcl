@@ -36,6 +36,8 @@ if (${DEFAULT} STREQUAL "TRUE")
   set(DEFAULT FALSE)
 endif()
 
+set(DEFAULT TRUE)
+
 pcl_subsubsys_option(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
 pcl_subsubsys_depend(build "${SUBSYS_NAME}" "${SUBSUBSYS_NAME}" DEPS ${SUBSYS_DEPS} EXT_DEPS Qt5 OpenGL OpenGL_GLU rssdk2)
 
