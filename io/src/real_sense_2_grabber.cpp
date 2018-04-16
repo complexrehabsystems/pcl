@@ -58,8 +58,12 @@ namespace pcl
     , quit_ (false)
     , running_ (false)
     , fps_ (0)
-    , device_width_ (424)
-    , device_height_ (240)
+//MIP for SR300
+	, device_width_ (640)
+	, device_height_ (480)
+// MIP for original
+//    , device_width_ (424)
+//    , device_height_ (240)
     , target_fps_ (30)    
   {
   }
